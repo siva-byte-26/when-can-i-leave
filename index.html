@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Leave Time</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+:root {
+    --bg:#0a0d14;
+    --card:#111827;
+    --border:#1f2937;
+    --text:#e5e7eb;
+    --muted:#9ca3af;
+    --accent:#6366f1;
+}
+
+* { box-sizing:border-box; }
+
+body {
+    margin:0;
+    min-height:100vh;
+    background:var(--bg);
+    font-family:system-ui,-apple-system,sans-serif;
+    color:var(--text);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:16px;
+}
+
+.card {
+    width:100%;
+    max-width:420px;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:20px;
+}
+
+h1 {
+    margin:0;
+    font-size:20px;
+}
+
+p {
+    margin:6px 0 20px;
+    font-size:14px;
+    color:var(--muted);
+}
+
+.time-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+input {
+    min-width: 0;
+}
+
+input {
+    flex:1;
+    padding:14px;
+    font-size:16px;
+    background:#020617;
+    border:1px solid var(--border);
+    border-radius:12px;
+    color:var(--text);
+    text-align:center;
+}
+
+.toggle {
+    display:flex;
+    gap:8px;
+    margin-top:12px;
+}
+
+.toggle button {
+    flex:1;
+    padding:12px;
+    font-size:14px;
+    border-radius:12px;
+    border:1px solid var(--border);
+    background:#020617;
+    color:var(--text);
+    cursor:pointer;
+}
+
+.toggle button.active {
+    background:var(--accent);
+    border-color:var(--accent);
+}
+
+button.calculate {
+    margin-top:18px;
+    width:100%;
+    padding:14px;
+    font-size:16px;
+    font-weight:600;
+    border-radius:12px;
+    border:none;
+    background:var(--accent);
+    color:white;
+}
+
+.result {
+    margin-top:18px;
+    padding:14px;
+    border-radius:12px;
+    background:#020617;
+    border:1px solid var(--border);
+    text-align:center;
+    font-size:18px;
+    display:none;
+}
+</style>
+</head>
+
+<body>
+<div class="card">
+    <h1>Leave Time</h1>
+    <p>Enter login time. We add 8h 45m.</p>
+
+    <div id="desktopInput" style="display:none">
+        <div class="time-row">
+            <input id="hh" placeholder="HH" inputmode="numeric">
+            <input id="mm" placeholder="MM" inputmode="numeric">
+            <input id="ss" placeholder="SS" inputmode="numeric">
+        </div>
+
+        <div class="toggle">
+            <button id="amBtn" class="active">AM</button>
+            <button id="pmBtn">PM</button>
+        </div>
+    </div>
+
+    <div id="mobileInput" style="display:none">
+        <input type="time" id="mobileTime" step="1">
+        <div class="toggle">
+            <button id="mAmBtn" class="active">AM</button>
+            <button id="mPmBtn">PM</button>
+        </div>
+    </div>
+
+    <button class="calculate" onclick="calculate()">Calculate</button>
+    <div class="result" id="result"></div>
+</div>
+
+<script>
+const isTouch =
+    "ontouchstart" in window || navigator.maxTouchPoints > 0;
+
+document.getElementById(isTouch ? "mobileInput" : "desktopInput")
+    .style.display = "block";
+
+function setupToggle(amId, pmId) {
+    const am = document.getElementById(amId);
+    const pm = document.getElementById(pmId);
+
+    am.onclick = () => {
+        am.classList.add("active");
+        pm.classList.remove("active");
+    };
+    pm.onclick = () => {
+        pm.classList.add("active");
+        am.classList.remove("active");
+    };
+}
+
+setupToggle("amBtn", "pmBtn");
+setupToggle("mAmBtn", "mPmBtn");
+
+function calculate() {
+    const result = document.getElementById("result");
+
+    let h, m, s, isPM;
+
+    if (isTouch) {
+        const val = document.getElementById("mobileTime").value;
+        if (!val) return;
+
+        const parts = val.split(":");
+        h = parseInt(parts[0],10);
+        m = parseInt(parts[1],10);
+        s = parseInt(parts[2]||0,10);
+        isPM = document.getElementById("mPmBtn").classList.contains("active");
+    } else {
+        h = parseInt(document.getElementById("hh").value,10);
+        m = parseInt(document.getElementById("mm").value,10);
+        s = parseInt(document.getElementById("ss").value,10);
+        isPM = document.getElementById("pmBtn").classList.contains("active");
+    }
+
+    if (h < 1 || h > 12 || m > 59 || s > 59) {
+        result.style.display = "block";
+        result.textContent = "Invalid time";
+        return;
+    }
+
+    if (h === 12) h = 0;
+    if (isPM) h += 12;
+
+    const date = new Date();
+    date.setHours(h, m, s, 0);
+    date.setMinutes(date.getMinutes() + 525);
+
+    const outH24 = date.getHours();
+    const outH12 = outH24 % 12 || 12;
+    const outM = String(date.getMinutes()).padStart(2,"0");
+    const outS = String(date.getSeconds()).padStart(2,"0");
+    const outAMPM = outH24 >= 12 ? "PM" : "AM";
+
+    result.style.display = "block";
+    result.textContent =
+        `You can leave at ${outH12}:${outM}:${outS} ${outAMPM}`;
+}
+</script>
+</body>
+</html>
