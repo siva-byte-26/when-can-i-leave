@@ -135,13 +135,9 @@ button.calculate {
         </div>
     </div>
 
-    <div id="mobileInput" style="display:none">
-        <input type="time" id="mobileTime" step="1">
-        <div class="toggle">
-            <button id="mAmBtn" class="active">AM</button>
-            <button id="mPmBtn">PM</button>
-        </div>
-    </div>
+<div id="mobileInput" style="display:none">
+    <input type="time" id="mobileTime" step="1">
+</div>
 
     <button class="calculate" onclick="calculate()">Calculate</button>
     <div class="result" id="result"></div>
@@ -183,8 +179,10 @@ function calculate() {
         const parts = val.split(":");
         h = parseInt(parts[0],10);
         m = parseInt(parts[1],10);
-        s = parseInt(parts[2]||0,10);
-        isPM = document.getElementById("mPmBtn").classList.contains("active");
+        s = parseInt(parts[2] || 0,10);
+        
+        isPM = h >= 12;
+
     } else {
         const rawH = document.getElementById("hh").value.replace(/\D/g,"");
         const rawM = document.getElementById("mm").value.replace(/\D/g,"");
@@ -224,4 +222,5 @@ function calculate() {
 </script>
 </body>
 </html>
+
 
