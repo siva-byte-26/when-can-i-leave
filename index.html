@@ -50,9 +50,13 @@ p {
 }
 
 .time-row {
-    display:grid;
-    grid-template-columns:repeat(3,1fr);
-    gap:8px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+
+input {
+    min-width: 0;
 }
 
 input {
@@ -142,19 +146,26 @@ const isTouch =
     "ontouchstart" in window || navigator.maxTouchPoints > 0;
 
 if (isTouch) {
-    document.getElementById("desktopInput").style.display = "none";
-    document.getElementById("mobileInput").style.display = "block";
+    desktopInput.style.display = "none";
+    mobileInput.style.display = "block";
 }
 
-document.getElementById("amBtn").onclick = () => {
+amBtn.onclick = () => {
     amBtn.classList.add("active");
     pmBtn.classList.remove("active");
 };
 
-document.getElementById("pmBtn").onclick = () => {
+pmBtn.onclick = () => {
     pmBtn.classList.add("active");
     amBtn.classList.remove("active");
 };
+
+// ENTER key support on desktop
+document.addEventListener("keydown", e => {
+    if (!isTouch && e.key === "Enter") {
+        calculate();
+    }
+});
 
 function calculate() {
     const result = document.getElementById("result");
@@ -164,7 +175,7 @@ function calculate() {
     let seconds = 0;
 
     if (isTouch) {
-        const val = document.getElementById("mobileTime").value;
+        const val = mobileTime.value;
         if (!val) return;
 
         const parts = val.split(":");
@@ -173,18 +184,22 @@ function calculate() {
         seconds = parseInt(parts[2] || 0,10) || 0;
 
     } else {
-        const hRaw = document.getElementById("hh").value.replace(/\D/g,"");
-        const mRaw = document.getElementById("mm").value.replace(/\D/g,"");
-        const sRaw = document.getElementById("ss").value.replace(/\D/g,"");
+        const hRaw = hh.value.replace(/\D/g,"");
+        const mRaw = mm.value.replace(/\D/g,"");
+        const sRaw = ss.value.replace(/\D/g,"");
 
-        let h12 = parseInt(hRaw || 0,10);
+        let h = parseInt(hRaw || 0,10);
         minutes = parseInt(mRaw || 0,10);
         seconds = parseInt(sRaw || 0,10);
 
-        if (h12 === 12) h12 = 0;
-        hours = document.getElementById("pmBtn").classList.contains("active")
-            ? h12 + 12
-            : h12;
+        // DESKTOP LOGIC:
+        // If hour >= 13 → treat as 24h, ignore AM/PM
+        if (h >= 13) {
+            hours = h;
+        } else {
+            if (h === 12) h = 0;
+            hours = pmBtn.classList.contains("active") ? h + 12 : h;
+        }
     }
 
     let totalSeconds =
