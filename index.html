@@ -186,13 +186,19 @@ function calculate() {
         s = parseInt(parts[2]||0,10);
         isPM = document.getElementById("mPmBtn").classList.contains("active");
     } else {
-        h = parseInt(document.getElementById("hh").value,10);
-        m = parseInt(document.getElementById("mm").value,10);
-        s = parseInt(document.getElementById("ss").value,10);
+        const rawH = document.getElementById("hh").value.replace(/\D/g,"");
+        const rawM = document.getElementById("mm").value.replace(/\D/g,"");
+        const rawS = document.getElementById("ss").value.replace(/\D/g,"");
+
+        h = rawH === "" ? NaN : parseInt(rawH, 10);
+        m = rawM === "" ? 0 : parseInt(rawM, 10);
+        s = rawS === "" ? 0 : parseInt(rawS, 10);
+
         isPM = document.getElementById("pmBtn").classList.contains("active");
     }
 
-    if (h < 1 || h > 12 || m > 59 || s > 59) {
+    if (!Number.isInteger(h) || h < 1 || h > 12 || m < 0 || m > 59 || s < 0 || s > 59) {
+
         result.style.display = "block";
         result.textContent = "Invalid time";
         return;
@@ -218,3 +224,4 @@ function calculate() {
 </script>
 </body>
 </html>
+
