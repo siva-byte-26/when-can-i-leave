@@ -50,17 +50,12 @@ p {
 }
 
 .time-row {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:8px;
 }
 
 input {
-    min-width: 0;
-}
-
-input {
-    flex:1;
     padding:14px;
     font-size:16px;
     background:#020617;
@@ -84,7 +79,6 @@ input {
     border:1px solid var(--border);
     background:#020617;
     color:var(--text);
-    cursor:pointer;
 }
 
 .toggle button.active {
@@ -122,7 +116,7 @@ button.calculate {
     <h1>Leave Time</h1>
     <p>Enter login time. We add 8h 45m.</p>
 
-    <div id="desktopInput" style="display:none">
+    <div id="desktopInput">
         <div class="time-row">
             <input id="hh" placeholder="HH" inputmode="numeric">
             <input id="mm" placeholder="MM" inputmode="numeric">
@@ -135,9 +129,9 @@ button.calculate {
         </div>
     </div>
 
-<div id="mobileInput" style="display:none">
-    <input type="time" id="mobileTime" step="1">
-</div>
+    <div id="mobileInput" style="display:none">
+        <input type="time" id="mobileTime" step="1">
+    </div>
 
     <button class="calculate" onclick="calculate()">Calculate</button>
     <div class="result" id="result"></div>
@@ -147,80 +141,72 @@ button.calculate {
 const isTouch =
     "ontouchstart" in window || navigator.maxTouchPoints > 0;
 
-document.getElementById(isTouch ? "mobileInput" : "desktopInput")
-    .style.display = "block";
-
-function setupToggle(amId, pmId) {
-    const am = document.getElementById(amId);
-    const pm = document.getElementById(pmId);
-
-    am.onclick = () => {
-        am.classList.add("active");
-        pm.classList.remove("active");
-    };
-    pm.onclick = () => {
-        pm.classList.add("active");
-        am.classList.remove("active");
-    };
+if (isTouch) {
+    document.getElementById("desktopInput").style.display = "none";
+    document.getElementById("mobileInput").style.display = "block";
 }
 
-setupToggle("amBtn", "pmBtn");
-setupToggle("mAmBtn", "mPmBtn");
+document.getElementById("amBtn").onclick = () => {
+    amBtn.classList.add("active");
+    pmBtn.classList.remove("active");
+};
+
+document.getElementById("pmBtn").onclick = () => {
+    pmBtn.classList.add("active");
+    amBtn.classList.remove("active");
+};
 
 function calculate() {
     const result = document.getElementById("result");
 
-    let h, m, s, isPM;
+    let hours = 0;
+    let minutes = 0;
+    let seconds = 0;
 
     if (isTouch) {
         const val = document.getElementById("mobileTime").value;
         if (!val) return;
 
         const parts = val.split(":");
-        h = parseInt(parts[0],10);
-        m = parseInt(parts[1],10);
-        s = parseInt(parts[2] || 0,10);
-        
-        isPM = h >= 12;
+        hours = parseInt(parts[0],10) || 0;
+        minutes = parseInt(parts[1],10) || 0;
+        seconds = parseInt(parts[2] || 0,10) || 0;
 
     } else {
-        const rawH = document.getElementById("hh").value.replace(/\D/g,"");
-        const rawM = document.getElementById("mm").value.replace(/\D/g,"");
-        const rawS = document.getElementById("ss").value.replace(/\D/g,"");
+        const hRaw = document.getElementById("hh").value.replace(/\D/g,"");
+        const mRaw = document.getElementById("mm").value.replace(/\D/g,"");
+        const sRaw = document.getElementById("ss").value.replace(/\D/g,"");
 
-        h = rawH === "" ? NaN : parseInt(rawH, 10);
-        m = rawM === "" ? 0 : parseInt(rawM, 10);
-        s = rawS === "" ? 0 : parseInt(rawS, 10);
+        let h12 = parseInt(hRaw || 0,10);
+        minutes = parseInt(mRaw || 0,10);
+        seconds = parseInt(sRaw || 0,10);
 
-        isPM = document.getElementById("pmBtn").classList.contains("active");
+        if (h12 === 12) h12 = 0;
+        hours = document.getElementById("pmBtn").classList.contains("active")
+            ? h12 + 12
+            : h12;
     }
 
-    if (!Number.isInteger(h) || h < 1 || h > 12 || m < 0 || m > 59 || s < 0 || s > 59) {
+    let totalSeconds =
+        hours * 3600 +
+        minutes * 60 +
+        seconds +
+        (8 * 3600) +
+        (45 * 60);
 
-        result.style.display = "block";
-        result.textContent = "Invalid time";
-        return;
-    }
+    totalSeconds = totalSeconds % 86400;
 
-    if (h === 12) h = 0;
-    if (isPM) h += 12;
+    const outH24 = Math.floor(totalSeconds / 3600);
+    const outM = Math.floor((totalSeconds % 3600) / 60);
+    const outS = totalSeconds % 60;
 
-    const date = new Date();
-    date.setHours(h, m, s, 0);
-    date.setMinutes(date.getMinutes() + 525);
-
-    const outH24 = date.getHours();
-    const outH12 = outH24 % 12 || 12;
-    const outM = String(date.getMinutes()).padStart(2,"0");
-    const outS = String(date.getSeconds()).padStart(2,"0");
     const outAMPM = outH24 >= 12 ? "PM" : "AM";
+    const outH12 = outH24 % 12 || 12;
 
     result.style.display = "block";
     result.textContent =
-        `You can leave at ${outH12}:${outM}:${outS} ${outAMPM}`;
+        `You can leave at ${outH12}:${String(outM).padStart(2,"0")}:${String(outS).padStart(2,"0")} ${outAMPM}`;
 }
 </script>
 </body>
 </html>
-
-
