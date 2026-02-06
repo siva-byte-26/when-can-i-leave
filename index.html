@@ -30,12 +30,24 @@ body {
 }
 
 .card {
+    position:relative;
     width:100%;
     max-width:420px;
     background:var(--card);
     border:1px solid var(--border);
     border-radius:16px;
     padding:20px;
+}
+
+.reset {
+    position:absolute;
+    top:12px;
+    right:12px;
+    background:none;
+    border:none;
+    color:var(--muted);
+    font-size:14px;
+    cursor:pointer;
 }
 
 h1 {
@@ -50,13 +62,9 @@ p {
 }
 
 .time-row {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
-}
-
-input {
-    min-width: 0;
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:8px;
 }
 
 input {
@@ -117,24 +125,20 @@ button.calculate {
 
 <body>
 <div class="card">
+    <button class="reset" onclick="resetAll()">Reset</button>
+
     <h1>Leave Time</h1>
     <p>Enter login time. We add 8h 45m.</p>
 
-    <div id="desktopInput">
-        <div class="time-row">
-            <input id="hh" placeholder="HH" inputmode="numeric">
-            <input id="mm" placeholder="MM" inputmode="numeric">
-            <input id="ss" placeholder="SS" inputmode="numeric">
-        </div>
-
-        <div class="toggle">
-            <button id="amBtn" class="active">AM</button>
-            <button id="pmBtn">PM</button>
-        </div>
+    <div class="time-row">
+        <input id="hh" placeholder="HH" maxlength="2">
+        <input id="mm" placeholder="MM" maxlength="2">
+        <input id="ss" placeholder="SS" maxlength="2">
     </div>
 
-    <div id="mobileInput" style="display:none">
-        <input type="time" id="mobileTime" step="1">
+    <div class="toggle">
+        <button id="amBtn" class="active">AM</button>
+        <button id="pmBtn">PM</button>
     </div>
 
     <button class="calculate" onclick="calculate()">Calculate</button>
@@ -142,14 +146,29 @@ button.calculate {
 </div>
 
 <script>
-const isTouch =
-    "ontouchstart" in window || navigator.maxTouchPoints > 0;
+const hh = document.getElementById("hh");
+const mm = document.getElementById("mm");
+const ss = document.getElementById("ss");
+const amBtn = document.getElementById("amBtn");
+const pmBtn = document.getElementById("pmBtn");
+const result = document.getElementById("result");
 
-if (isTouch) {
-    desktopInput.style.display = "none";
-    mobileInput.style.display = "block";
+// focus HH on load
+window.onload = () => hh.focus();
+
+// auto jump logic
+function autoJump(current, next) {
+    current.addEventListener("input", () => {
+        if (current.value.length === 2) {
+            next.focus();
+        }
+    });
 }
 
+autoJump(hh, mm);
+autoJump(mm, ss);
+
+// toggle
 amBtn.onclick = () => {
     amBtn.classList.add("active");
     pmBtn.classList.remove("active");
@@ -160,56 +179,31 @@ pmBtn.onclick = () => {
     amBtn.classList.remove("active");
 };
 
-// ENTER key support on desktop
+// Enter key calculate
 document.addEventListener("keydown", e => {
-    if (!isTouch && e.key === "Enter") {
-        calculate();
-    }
+    if (e.key === "Enter") calculate();
 });
 
 function calculate() {
-    const result = document.getElementById("result");
+    let h = parseInt(hh.value || 0,10);
+    let m = parseInt(mm.value || 0,10);
+    let s = parseInt(ss.value || 0,10);
 
-    let hours = 0;
-    let minutes = 0;
-    let seconds = 0;
-
-    if (isTouch) {
-        const val = mobileTime.value;
-        if (!val) return;
-
-        const parts = val.split(":");
-        hours = parseInt(parts[0],10) || 0;
-        minutes = parseInt(parts[1],10) || 0;
-        seconds = parseInt(parts[2] || 0,10) || 0;
-
+    if (h >= 13) {
+        // treat as 24h
     } else {
-        const hRaw = hh.value.replace(/\D/g,"");
-        const mRaw = mm.value.replace(/\D/g,"");
-        const sRaw = ss.value.replace(/\D/g,"");
-
-        let h = parseInt(hRaw || 0,10);
-        minutes = parseInt(mRaw || 0,10);
-        seconds = parseInt(sRaw || 0,10);
-
-        // DESKTOP LOGIC:
-        // If hour >= 13 → treat as 24h, ignore AM/PM
-        if (h >= 13) {
-            hours = h;
-        } else {
-            if (h === 12) h = 0;
-            hours = pmBtn.classList.contains("active") ? h + 12 : h;
-        }
+        if (h === 12) h = 0;
+        if (pmBtn.classList.contains("active")) h += 12;
     }
 
     let totalSeconds =
-        hours * 3600 +
-        minutes * 60 +
-        seconds +
+        h * 3600 +
+        m * 60 +
+        s +
         (8 * 3600) +
         (45 * 60);
 
-    totalSeconds = totalSeconds % 86400;
+    totalSeconds %= 86400;
 
     const outH24 = Math.floor(totalSeconds / 3600);
     const outM = Math.floor((totalSeconds % 3600) / 60);
@@ -221,6 +215,16 @@ function calculate() {
     result.style.display = "block";
     result.textContent =
         `You can leave at ${outH12}:${String(outM).padStart(2,"0")}:${String(outS).padStart(2,"0")} ${outAMPM}`;
+}
+
+function resetAll() {
+    hh.value = "";
+    mm.value = "";
+    ss.value = "";
+    amBtn.classList.add("active");
+    pmBtn.classList.remove("active");
+    result.style.display = "none";
+    hh.focus();
 }
 </script>
 </body>
