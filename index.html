@@ -62,12 +62,13 @@ p {
 }
 
 .time-row {
-    display:grid;
-    grid-template-columns:repeat(3,minmax(0,1fr));
-    gap:8px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
 }
 
 input {
+    min-width: 0;
     padding:14px;
     font-size:16px;
     background:#020617;
@@ -130,15 +131,21 @@ button.calculate {
     <h1>Leave Time</h1>
     <p>Enter login time. We add 8h 45m.</p>
 
-    <div class="time-row">
-        <input id="hh" placeholder="HH" maxlength="2">
-        <input id="mm" placeholder="MM" maxlength="2">
-        <input id="ss" placeholder="SS" maxlength="2">
+    <div id="desktopInput">
+        <div class="time-row">
+            <input id="hh" placeholder="HH" inputmode="numeric" maxlength="2">
+            <input id="mm" placeholder="MM" inputmode="numeric" maxlength="2">
+            <input id="ss" placeholder="SS" inputmode="numeric" maxlength="2">
+        </div>
+
+        <div class="toggle">
+            <button id="amBtn" class="active">AM</button>
+            <button id="pmBtn">PM</button>
+        </div>
     </div>
 
-    <div class="toggle">
-        <button id="amBtn" class="active">AM</button>
-        <button id="pmBtn">PM</button>
+    <div id="mobileInput" style="display:none">
+        <input type="time" id="mobileTime" step="1">
     </div>
 
     <button class="calculate" onclick="calculate()">Calculate</button>
@@ -146,29 +153,15 @@ button.calculate {
 </div>
 
 <script>
-const hh = document.getElementById("hh");
-const mm = document.getElementById("mm");
-const ss = document.getElementById("ss");
-const amBtn = document.getElementById("amBtn");
-const pmBtn = document.getElementById("pmBtn");
-const result = document.getElementById("result");
+const isTouch =
+    "ontouchstart" in window || navigator.maxTouchPoints > 0;
 
-// focus HH on load
-window.onload = () => hh.focus();
-
-// auto jump logic
-function autoJump(current, next) {
-    current.addEventListener("input", () => {
-        if (current.value.length === 2) {
-            next.focus();
-        }
-    });
+if (isTouch) {
+    desktopInput.style.display = "none";
+    mobileInput.style.display = "block";
 }
 
-autoJump(hh, mm);
-autoJump(mm, ss);
-
-// toggle
+// AM PM toggle
 amBtn.onclick = () => {
     amBtn.classList.add("active");
     pmBtn.classList.remove("active");
@@ -179,27 +172,63 @@ pmBtn.onclick = () => {
     amBtn.classList.remove("active");
 };
 
-// Enter key calculate
+// ENTER key support
 document.addEventListener("keydown", e => {
-    if (e.key === "Enter") calculate();
+    if (!isTouch && e.key === "Enter") {
+        calculate();
+    }
 });
 
-function calculate() {
-    let h = parseInt(hh.value || 0,10);
-    let m = parseInt(mm.value || 0,10);
-    let s = parseInt(ss.value || 0,10);
+// focus + auto jump (DESKTOP ONLY)
+if (!isTouch) {
+    window.onload = () => hh.focus();
 
-    if (h >= 13) {
-        // treat as 24h
+    hh.addEventListener("input", () => {
+        if (hh.value.length === 2) mm.focus();
+    });
+
+    mm.addEventListener("input", () => {
+        if (mm.value.length === 2) ss.focus();
+    });
+}
+
+function calculate() {
+    const result = document.getElementById("result");
+
+    let hours = 0;
+    let minutes = 0;
+    let seconds = 0;
+
+    if (isTouch) {
+        const val = mobileTime.value;
+        if (!val) return;
+
+        const parts = val.split(":");
+        hours = parseInt(parts[0],10) || 0;
+        minutes = parseInt(parts[1],10) || 0;
+        seconds = parseInt(parts[2] || 0,10) || 0;
+
     } else {
-        if (h === 12) h = 0;
-        if (pmBtn.classList.contains("active")) h += 12;
+        const hRaw = hh.value.replace(/\D/g,"");
+        const mRaw = mm.value.replace(/\D/g,"");
+        const sRaw = ss.value.replace(/\D/g,"");
+
+        let h = parseInt(hRaw || 0,10);
+        minutes = parseInt(mRaw || 0,10);
+        seconds = parseInt(sRaw || 0,10);
+
+        if (h >= 13) {
+            hours = h;
+        } else {
+            if (h === 12) h = 0;
+            hours = pmBtn.classList.contains("active") ? h + 12 : h;
+        }
     }
 
     let totalSeconds =
-        h * 3600 +
-        m * 60 +
-        s +
+        hours * 3600 +
+        minutes * 60 +
+        seconds +
         (8 * 3600) +
         (45 * 60);
 
